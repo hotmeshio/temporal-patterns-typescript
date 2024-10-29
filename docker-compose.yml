@@ -1,0 +1,131 @@
+name: hotmesh
+
+services:
+  redis:
+    image: redis/redis-stack:7.2.0-v10
+    platform: linux/amd64
+    environment:
+      REDIS_ARGS: "--requirepass key_admin"
+    ports:
+      - "6399:6379"
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "-a", "key_admin", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - redis_data:/data
+
+  valkey:
+    image: valkey/valkey:7.2.5
+    platform: linux/amd64
+    ports:
+      - "6398:6379"
+    volumes:
+      - valkey_data:/data
+      - ./valkey.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+
+  dragonflydb:
+    image: 'docker.dragonflydb.io/dragonflydb/dragonfly'
+    ulimits:
+      memlock: -1
+    ports:
+      - "6397:6379"
+    volumes:
+      - dragonfly_data:/data
+
+  postgresql:
+    container_name: temporal-postgresql
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    image: postgres:15.4
+    ports:
+      - 5433:5432
+    volumes:
+      - /var/lib/postgresql/data
+
+  temporal:
+    container_name: temporal
+    depends_on:
+      - postgresql
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    image: temporalio/auto-setup:1.21.3
+    ports:
+      - 7233:7233
+    volumes:
+      - ./temporal/config/dynamicconfig:/etc/temporal/config/dynamicconfig
+    labels:
+      kompose.volume.type: configMap
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "tctl",
+          "--address",
+          "temporal:7233",
+          "workflow",
+          "list"
+        ]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+
+  temporal-admin-tools:
+    container_name: temporal-admin-tools
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    image: temporalio/admin-tools:1.21.3
+    stdin_open: true
+    tty: true
+
+  temporal-ui:
+    container_name: temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    image: temporalio/ui:2.22.2
+    ports:
+      - 8080:8080
+
+  dashboard:
+    platform: linux/amd64
+    build:
+      context: .
+      target: development
+    ports:
+      - "3010:3010"
+    environment:
+      - NODE_ENV=development
+      - PORT=3010
+    depends_on:
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    command: ["sh", "-c", "npm install && tail -f /dev/null"]
+
+volumes:
+  redis_data:
+    driver: local
+  valkey_data:
+    driver: local
+  dragonfly_data:
+    driver: local
+  node_modules:

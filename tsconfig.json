@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "commonjs",
+    "outDir": "./build",
+    "declaration": true,
+    "declarationMap": false,
+    "removeComments": true,
+    "stripInternal": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests",
+    "build",
+    "docs",
+    "scripts",
+  ]
+}
