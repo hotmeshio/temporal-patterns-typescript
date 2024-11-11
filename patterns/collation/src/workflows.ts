@@ -1,8 +1,8 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 
-const { greet } = MeshFlow.workflow.proxyActivities<typeof activities>({
+const { greet } = workflow.proxyActivities<typeof activities>({
   activities,
 });
 
@@ -11,6 +11,6 @@ export async function example(): Promise<[string, string, string, number]> {
     greet('1'),
     greet('2'),
     greet('3'),
-    MeshFlow.workflow.sleepFor('5 seconds'),
+    workflow.sleepFor('5 seconds'),
   ]);
 }

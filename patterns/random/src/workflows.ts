@@ -1,4 +1,4 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 
@@ -9,13 +9,13 @@ type ActivitiesType = {
   greet: typeof greetFunctionType;
 };
 
-const { greet } = MeshFlow.workflow.proxyActivities<ActivitiesType>({
+const { greet } = workflow.proxyActivities<ActivitiesType>({
   activities,
 });
 
 export async function example(name: string): Promise<string> {
-  const random1 = MeshFlow.workflow.random();
+  const random1 = workflow.random();
   const proxyGreeting = await greet(name);
-  const random2 = MeshFlow.workflow.random();
+  const random2 = workflow.random();
   return `${random1} ${proxyGreeting} ${random2}`;
 }

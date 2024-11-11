@@ -3,8 +3,10 @@ import { WorkflowClient, Connection } from '@temporalio/client';
 import { TestArgs } from '../../../../types/test';
 import { config } from '../../../config';
 import { connection as connectionConfig } from '../../../connection';
-import { testCount } from '../../../../modules/utils';
 
+function testCount(width: number, depth: number): number {
+  return (Math.pow(width, depth + 1) - 1) / (width - 1);
+}
 export class TemporalClient {
   private client: WorkflowClient;
 

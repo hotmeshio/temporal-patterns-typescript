@@ -1,4 +1,4 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 
@@ -9,20 +9,20 @@ type ActivitiesType = {
   greet: typeof greetFunctionType;
 };
 
-const { greet } = MeshFlow.workflow.proxyActivities<ActivitiesType>({
+const { greet } = workflow.proxyActivities<ActivitiesType>({
   activities,
 });
 
 export async function example(name: string): Promise<string> {
   const greet1 = await greet(name);
-  const response = await MeshFlow.workflow.execChild<string>({
+  await workflow.execChild<string>({
     args: ['Howdy!'],
     taskQueue: 'idempotency-world',
     workflowName: 'childExample',
     workflowId: 'idempotency-child', //the parent is already named this,
     expire: 10_000,
   });
-  //should never return as error will be thrown
+  //this line will never be reached (workflow id collision)
   return greet1;
 }
 
@@ -38,7 +38,7 @@ export async function fixableExample(badCount: number): Promise<string> {
   //add unique suffix to workflowId after `badCount` failures
   const uniqueSuffix = STATE.count++ > badCount ? '-fixed' : '';
 
-  const childOutput = await MeshFlow.workflow.execChild<string>({
+  const childOutput = await workflow.execChild<string>({
     args: ['FIXED'],
     taskQueue: 'idempotency-world',
     workflowName: 'childExample',

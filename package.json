@@ -22,7 +22,7 @@
     "test:signal": "NODE_ENV=test jest ./patterns/signal/index.test.ts --detectOpenHandles --forceExit --verbose"
   },
   "dependencies": {
-    "@hotmeshio/hotmesh": "0.3.8",
+    "@hotmeshio/hotmesh": "0.3.9",
     "@temporalio/client": "^1.10.3",
     "@temporalio/worker": "^1.10.3",
     "@temporalio/workflow": "^1.10.3"

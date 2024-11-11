@@ -1,15 +1,15 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 
-const { greet, bye } = MeshFlow.workflow.proxyActivities<typeof activities>({
+const { greet, bye } = workflow.proxyActivities<typeof activities>({
   activities,
 });
 
 export async function example(name: string): Promise<string> {
   //set values (they're added to the workflow HASH AND are indexed)
   //(`custom1` and `custom2` were added to the 'bye-bye' index)
-  const search = await MeshFlow.workflow.search();
+  const search = await workflow.search();
   await search.set('custom1', 'meshflow');
   await search.set('custom2', '55');
 
@@ -18,17 +18,17 @@ export async function example(name: string): Promise<string> {
   const [hello, goodbye] = await Promise.all([greet(name), bye(name)]);
 
   //all data is available to the workflow
-  const j1 = await search.get('jimbo');
-  await search.incr('counter', 10);
-  const j2 = await search.get('jimbo');
-  const j3 = await search.mget('jimbo');
-  const val1 = await search.incr('counter', 1);
-  const val2 = await search.get('counter');
-  const val3 = await search.mult('multer', 12);
+  await search.get('jimbo');
+  await search.incr('counter', 10); //increment
+  await search.get('jimbo');
+  await search.mget('jimbo');
+  await search.incr('counter', 1);
+  await search.get('counter');
+  await search.mult('multer', 12); //multiply
 
   //val4 is 120.00000000009 (rounding error due to logarithmic math)
-  const val4 = await search.mult('multer', 10);
-  const signal1 = await MeshFlow.workflow.waitFor<{ data: string }>('abcdefg');
+  await search.mult('multer', 10);
+  await workflow.waitFor<{ data: string }>('abcdefg');
 
   return `${hello} - ${goodbye}`;
 }
@@ -42,8 +42,8 @@ export async function example(name: string): Promise<string> {
  * This example, udpates shared job data (counter)
  */
 export async function exampleHook(name: string): Promise<void> {
-  const search = await MeshFlow.workflow.search();
+  const search = await workflow.search();
   await search.incr('counter', 100);
-  await MeshFlow.workflow.sleepFor('1 second');
-  MeshFlow.workflow.signal('abcdefg', { data: 'hello' });
+  await workflow.sleepFor('1 second');
+  workflow.signal('abcdefg', { data: 'hello' });
 }

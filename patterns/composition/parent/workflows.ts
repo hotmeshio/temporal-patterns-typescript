@@ -1,9 +1,9 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 import type * as activityTypes from './activities';
 
-const { parentActivity } = MeshFlow.workflow.proxyActivities<
+const { parentActivity } = workflow.proxyActivities<
   typeof activityTypes
 >({
   activities,
@@ -16,13 +16,13 @@ export async function parentExample(
   const activityOutput = await parentActivity(name);
   //tests signal suppression within collated sets
   const [childWorkflowOutput] = await Promise.all([
-    MeshFlow.workflow.execChild<string>({
+    workflow.execChild<string>({
       args: [`${name} to CHILD`],
       taskQueue: 'child-world',
       workflowName: 'childExample',
       signalIn,
     }),
-    MeshFlow.workflow.execChild<string>({
+    workflow.execChild<string>({
       args: [`${name} to CHILD 2`],
       taskQueue: 'child-world',
       workflowName: 'childExample',

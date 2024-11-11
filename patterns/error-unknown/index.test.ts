@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import { MeshFlow, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/clients/ioredis';
+import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/ioredis';
 import { MeshFlowMaxedError } from '@hotmeshio/hotmesh/build/modules/errors';
 
 import config from '../../$setup/config';

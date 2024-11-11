@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import { MeshFlow, Utils, Types  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/clients/ioredis';
+import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/ioredis';
 import { HMSH_CODE_INTERRUPT } from '@hotmeshio/hotmesh/build/modules/enums';
 
 import config from '../../$setup/config';

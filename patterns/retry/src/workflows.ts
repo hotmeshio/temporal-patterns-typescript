@@ -1,8 +1,8 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 
-const { count } = MeshFlow.workflow.proxyActivities<typeof activities>({
+const { count } = workflow.proxyActivities<typeof activities>({
   activities,
   retryPolicy: {
     maximumAttempts: 2, //the succesful test retries twice.

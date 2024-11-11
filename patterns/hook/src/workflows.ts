@@ -1,8 +1,8 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 
-const { greet, bye } = MeshFlow.workflow.proxyActivities<typeof activities>({
+const { greet, bye } = workflow.proxyActivities<typeof activities>({
   activities,
 });
 
@@ -17,7 +17,7 @@ const { greet, bye } = MeshFlow.workflow.proxyActivities<typeof activities>({
  */
 export async function example(name: string): Promise<string> {
   //create a search session and add some job data (this is NOT the same as job state)
-  const search = await MeshFlow.workflow.search();
+  const search = await workflow.search();
   await search.set('custom1', 'meshflow');
   await search.set('custom2', '55');
   //note: `exampleHook` function will change to 'jackson'
@@ -28,14 +28,14 @@ export async function example(name: string): Promise<string> {
   await search.mult('multer', 10);
 
   //start a child workflow and wait for the result
-  await MeshFlow.workflow.execChild<string>({
+  await workflow.execChild<string>({
     args: [`${name} to CHILD`],
     taskQueue: 'child-world',
     workflowName: 'childExample',
   });
 
   //start a child workflow and only confirm it started (don't wait for result)
-  await MeshFlow.workflow.startChild({
+  await workflow.startChild({
     args: [`${name} to CHILD`],
     taskQueue: 'child-world',
     workflowName: 'childExample',
@@ -45,10 +45,10 @@ export async function example(name: string): Promise<string> {
   const [hello, goodbye] = await Promise.all([greet(name), bye(name)]);
 
   //wait for the `abcdefg` signal ('exampleHook' will send it)
-  await MeshFlow.workflow.waitFor('abcdefg');
+  await workflow.waitFor('abcdefg');
 
   //sleep for 5
-  await MeshFlow.workflow.sleepFor('5 seconds');
+  await workflow.sleepFor('5 seconds');
 
   //return the result (the job state)
   return `${hello} - ${goodbye}`;
@@ -64,7 +64,7 @@ export async function example(name: string): Promise<string> {
  */
 export async function exampleHook(name: string): Promise<void> {
   //update shared job state (the workflow HASH)
-  const search = await MeshFlow.workflow.search();
+  const search = await workflow.search();
   await search.incr('counter', 100);
   await search.set('jimbo', 'jackson');
 
@@ -72,26 +72,26 @@ export async function exampleHook(name: string): Promise<void> {
   // and compare to an activity that uses a standard
   const [greeting, _timeInSeconds] = await Promise.all([
     bye(name, 1_000),
-    MeshFlow.workflow.sleepFor('1 second'),
+    workflow.sleepFor('1 second'),
   ]);
 
   //start a child workflow and wait for the result
-  await MeshFlow.workflow.execChild<string>({
+  await workflow.execChild<string>({
     args: [`${name} to CHILD`],
     taskQueue: 'child-world',
     workflowName: 'childExample',
   });
 
   //start a child workflow and only confirm it started (don't wait for result)
-  await MeshFlow.workflow.startChild({
+  await workflow.startChild({
     args: [`${name} to CHILD`],
     taskQueue: 'child-world',
     workflowName: 'childExample',
   });
 
   //test out sleeping
-  await MeshFlow.workflow.sleepFor('2 seconds');
+  await workflow.sleepFor('2 seconds');
 
   //awake the parent/main thread by sending the 'abcdefg' signal
-  await MeshFlow.workflow.signal('abcdefg', { data: greeting });
+  await workflow.signal('abcdefg', { data: greeting });
 }

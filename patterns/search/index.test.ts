@@ -1,6 +1,6 @@
 import * as Redis from 'redis';
 import { MeshFlow, Types, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/clients/redis';
+import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/redis';
 
 import config from '../../$setup/config';
 const { guid, sleepFor } = Utils;

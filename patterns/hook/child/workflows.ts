@@ -1,8 +1,8 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 
-const { childActivity } = MeshFlow.workflow.proxyActivities<typeof activities>({
+const { childActivity } = workflow.proxyActivities<typeof activities>({
   activities,
 });
 

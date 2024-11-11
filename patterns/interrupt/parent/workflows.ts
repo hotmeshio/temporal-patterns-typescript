@@ -1,17 +1,17 @@
-import { MeshFlow } from '@hotmeshio/hotmesh';
+import { workflow } from '@hotmeshio/hotmesh';
 
 export async function parentExample(
   name: string,
 ): Promise<Record<string, string>> {
   const workflowId1 = 'jimbo1';
   const workflowId2 = 'jimbo2';
-  const childWorkflowOutput1 = await MeshFlow.workflow.execChild<string>({
+  const childWorkflowOutput1 = await workflow.execChild<string>({
     args: [`${name} to CHILD`],
     taskQueue: 'child-world',
     workflowName: 'childExample',
     workflowId: workflowId1,
   });
-  const childWorkflowOutput2 = await MeshFlow.workflow.startChild({
+  const childWorkflowOutput2 = await workflow.startChild({
     args: [`${name} to CHILD`],
     taskQueue: 'child-world',
     workflowName: 'childExample',
@@ -20,7 +20,7 @@ export async function parentExample(
   });
   //interrupted flows are stopped immediately, while an async cascade is triggered
   // the workflow will also be expired/scrubbed from Redis in 600 seconds (default 1s)
-  (await MeshFlow.workflow.interrupt(workflowId2, {
+  (await workflow.interrupt(workflowId2, {
     throw: false,
     expire: 600,
   })) as string;
