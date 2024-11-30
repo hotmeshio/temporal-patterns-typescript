@@ -1,49 +1,33 @@
-import * as Redis from 'redis';
-import { MeshFlow, Types, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/redis';
+import { MeshFlow, Utils, Types } from '@hotmeshio/hotmesh';
 
-import config from '../../$setup/config';
+import { createAndTruncateDatabase, connection } from '../../$setup/postgres';
+
 import * as workflows from './src/workflows';
 
-const { deterministicRandom, guid, sleepFor } = Utils;
+const { guid, deterministicRandom, sleepFor } = Utils;
 const { Connection, Client, Worker } = MeshFlow;
 
-describe('TEMPORAL PATTERNS | everything', () => {
+describe('TEMPORAL PATTERNS | Everything', () => {
+  const taskQueue = 'everything-world';
+  const spawnedWorkflowId = guid();
   let handle: any;
-  const options = {
-    socket: {
-      host: config.REDIS_HOST,
-      port: config.REDIS_PORT,
-      tls: false,
-    },
-    password: config.REDIS_PASSWORD,
-    database: config.REDIS_DATABASE,
-  };
 
   beforeAll(async () => {
-    //init Redis and flush db
-    const redisConnection = await RedisConnection.connect(
-      guid(),
-      Redis as unknown as Types.RedisRedisClassType,
-      options,
-    );
-    redisConnection.getClient().flushDb();
-  });
+    await createAndTruncateDatabase(true);
+  }, 20_000);
 
   afterAll(async () => {
-    await sleepFor(1500);
     await MeshFlow.shutdown();
-  }, 10_000);
+  }, 20_000);
 
   describe('Connection', () => {
     describe('connect', () => {
-      it('should echo the Redis config', async () => {
-        const connection = await Connection.connect({
-          class: Redis,
-          options,
-        });
-        expect(connection).toBeDefined();
-        expect(connection.options).toBeDefined();
+      it('should echo the provider config', async () => {
+        const con = (await Connection.connect(
+          connection,
+        )) as Types.ProviderConfig;
+        expect(con).toBeDefined();
+        expect(con.options).toBeDefined();
       });
     });
   });
@@ -51,10 +35,10 @@ describe('TEMPORAL PATTERNS | everything', () => {
   describe('Client', () => {
     describe('start', () => {
       it('should connect a client and start a workflow execution', async () => {
-        const client = new Client({ connection: { class: Redis, options } });
+        const client = new Client({ connection });
         handle = await client.workflow.start({
-          args: ['HotMesh'],
-          taskQueue: 'everything-world',
+          args: ['HotMesh', spawnedWorkflowId],
+          taskQueue,
           workflowName: 'example',
           workflowId: 'workflow-' + guid(),
           expire: 600,
@@ -66,12 +50,6 @@ describe('TEMPORAL PATTERNS | everything', () => {
 
   describe('Worker', () => {
     describe('create', () => {
-      const connection = {
-        class: Redis,
-        options,
-      };
-      const taskQueue = 'everything-world';
-
       it('should create and run a parent worker', async () => {
         const worker = await Worker.create({
           connection,
@@ -80,7 +58,7 @@ describe('TEMPORAL PATTERNS | everything', () => {
         });
         await worker.run();
         expect(worker).toBeDefined();
-      });
+      }, 10_000);
 
       it('should create and run a child worker', async () => {
         const worker = await Worker.create({
@@ -90,7 +68,7 @@ describe('TEMPORAL PATTERNS | everything', () => {
         });
         await worker.run();
         expect(worker).toBeDefined();
-      });
+      }, 10_000);
     });
   });
 
@@ -114,7 +92,7 @@ describe('TEMPORAL PATTERNS | everything', () => {
         const r1 = deterministicRandom(1);
         const r2 = deterministicRandom(4);
         expect(result).toEqual({
-          jobId: 'MyWorkflowId123',
+          jobId: spawnedWorkflowId,
           payload: {
             data: {
               hello: 'world',

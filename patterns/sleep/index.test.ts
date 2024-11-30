@@ -1,50 +1,33 @@
-import Redis from 'ioredis';
-import { MeshFlow, Utils, Types  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/ioredis';
-import { HMSH_CODE_INTERRUPT } from '@hotmeshio/hotmesh/build/modules/enums';
+import { MeshFlow, Utils, Types } from '@hotmeshio/hotmesh';
 
-import config from '../../$setup/config';
+import { createAndTruncateDatabase, connection } from '../../$setup/postgres';
+
 import * as workflows from './src/workflows';
 
 const { guid, sleepFor } = Utils;
 const { Connection, Client, Worker } = MeshFlow;
 
-
-describe('TEMPORAL PATTERNS | sleep | `Suspend > Sleep > Reawaken`', () => {
+describe('TEMPORAL PATTERNS | Sleep | Interrupt', () => {
   let handle: any;
   let workflowGuid: string;
   let interruptedWorkflowGuid: string;
-  const options = {
-    host: config.REDIS_HOST,
-    port: config.REDIS_PORT,
-    password: config.REDIS_PASSWORD,
-    db: config.REDIS_DATABASE,
-  };
 
   beforeAll(async () => {
-    //init Redis and flush db
-    const redisConnection = await RedisConnection.connect(
-      guid(),
-      Redis,
-      options,
-    );
-    redisConnection.getClient().flushdb();
-  });
+    await createAndTruncateDatabase(true);
+  }, 20_000);
 
   afterAll(async () => {
-    await sleepFor(1500);
     await MeshFlow.shutdown();
-  }, 10_000);
+  }, 20_000);
 
   describe('Connection', () => {
     describe('connect', () => {
-      it('should echo the Redis config', async () => {
-        const connection = await Connection.connect({
-          class: Redis,
-          options,
-        });
-        expect(connection).toBeDefined();
-        expect(connection.options).toBeDefined();
+      it('should echo the provider config', async () => {
+        const con = (await Connection.connect(
+          connection,
+        )) as Types.ProviderConfig;
+        expect(con).toBeDefined();
+        expect(con.options).toBeDefined();
       });
     });
   });
@@ -53,10 +36,7 @@ describe('TEMPORAL PATTERNS | sleep | `Suspend > Sleep > Reawaken`', () => {
     describe('create', () => {
       it('should create and run a worker', async () => {
         const worker = await Worker.create({
-          connection: {
-            class: Redis,
-            options,
-          },
+          connection,
           taskQueue: 'hello-world',
           workflow: workflows.example,
         });
@@ -71,7 +51,7 @@ describe('TEMPORAL PATTERNS | sleep | `Suspend > Sleep > Reawaken`', () => {
       workflowGuid = guid();
       interruptedWorkflowGuid = guid();
       it('should connect a client and start a workflow execution', async () => {
-        const client = new Client({ connection: { class: Redis, options } });
+        const client = new Client({ connection });
 
         handle = await client.workflow.start({
           args: ['ColdMush'],
@@ -95,7 +75,7 @@ describe('TEMPORAL PATTERNS | sleep | `Suspend > Sleep > Reawaken`', () => {
   describe('WorkflowHandle', () => {
     describe('result', () => {
       it('should interrupt a workflow execution and throw a `410` error', async () => {
-        const client = new Client({ connection: { class: Redis, options } });
+        const client = new Client({ connection });
         const localHandle = await client.workflow.getHandle(
           'hello-world',
           workflows.example.name,
@@ -111,13 +91,16 @@ describe('TEMPORAL PATTERNS | sleep | `Suspend > Sleep > Reawaken`', () => {
           //subscribe to the workflow result (this will throw an `interrupted` error)
           await localHandle.result();
         } catch (e: any) {
-          expect((e as Types.StreamError).job_id).toEqual(interruptedWorkflowGuid);
-          expect((e as Types.StreamError).code).toEqual(HMSH_CODE_INTERRUPT);
+          expect((e as Types.StreamError).job_id).toEqual(
+            interruptedWorkflowGuid,
+          );
+          //todo: expose 410 Enum (all enums) in the HotMesh package export
+          expect((e as Types.StreamError).code).toEqual(410);
         }
       });
 
       it('should return the workflow execution result', async () => {
-        const client = new Client({ connection: { class: Redis, options } });
+        const client = new Client({ connection });
         const localHandle = await client.workflow.getHandle(
           'hello-world',
           workflows.example.name,

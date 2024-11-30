@@ -23,7 +23,9 @@ export class TemporalClient {
     });
   }
 
-  async startWorkflow(args: TestArgs): Promise<{ id: string, expectedCount: number }> {
+  async startWorkflow(
+    args: TestArgs,
+  ): Promise<{ id: string; expectedCount: number }> {
     if (!this.client) {
       await this.initializeClient();
     }
@@ -33,8 +35,11 @@ export class TemporalClient {
       taskQueue: config.taskQueue,
       args: [args],
     });
-    return { id: handle.workflowId, expectedCount: testCount(args.width, args.depth) };
+    return {
+      id: handle.workflowId,
+      expectedCount: testCount(args.width, args.depth),
+    };
   }
-};
+}
 
 export const temporalClient = new TemporalClient();

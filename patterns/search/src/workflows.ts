@@ -38,7 +38,7 @@ export async function example(name: string): Promise<string> {
  * or via an external call to the HotMesh API. When a hook
  * is invoked, it does not spawn a new workflow; rather
  * it runs in the context of an existing, target workflow.
- * 
+ *
  * This example, udpates shared job data (counter)
  */
 export async function exampleHook(name: string): Promise<void> {

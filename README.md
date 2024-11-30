@@ -1,6 +1,8 @@
-# temporal-patterns-typescript
+# Temporal Patterns
 
-This repository demonstrates common [Temporal.io](https://temporal.io/) design patterns using HotMesh. Each example pattern is authored as a set of unit tests with assertions made against the runtime, showcasing various patterns and use cases. Each test case cleans the database state to ensure consistency and isolation for each run.
+This repository demonstrates common [Temporal.io](https://temporal.io/) design patterns deployed using **HotMesh**. Each example pattern is authored as a set of unit tests with assertions made against the runtime, showcasing various platform features.
+
+The Temporal Postgres database is used as the default persistence layer for workflow state management for both HotMesh and Temporal. Temporal is included to showcase the interoperability between the two platforms.
 
 ## Getting Started
 
@@ -21,28 +23,39 @@ This repository demonstrates common [Temporal.io](https://temporal.io/) design p
     ```
 3. Startup Docker
     ```bash
-    docker compose up
+    npm run docker:up
     ```
-4. Exec `npm test` from within Docker
+4. **Shutdown Docker**
+    ```bash
+    npm run docker:down
+    ```
+5. **Cleanup Docker**
+    ```bash
+    npm run docker:reset
+    ```
+6. **Run Unit Tests** from within Docker (Postgres is the default backend).
     ```bash
     npm test
     ```
-
-For detailed explanations of each pattern, see the pattern pages in the [HotMesh Temporal Patterns documentation](https://hotmeshio.github.io/sdk-typescript/).
+7. **Run a Single Test (e.g., collation)**
+    ```bash
+    npm run test:collation
+    ```
 
 ### Pattern List 
- - [**Collation**](./patterns/collation): Demonstrates grouping tasks and merging results across workflow instances. 
- - [**Composition**](./patterns/composition): Highlights workflow composition, enabling modular and reusable task sequences.
+ - [**Collation**](./patterns/collation): Demonstrates `Promise.all` behavior in a reentrant workflow. 
+ - [**Composition**](./patterns/composition): Highlights parent-child workflow interactions.
  - [**Error (Unknown)**](./patterns/error-unknown): Handles unexpected errors in workflows with resilience strategies.
- - [**Error (Fatal)**](./patterns/error-fatal): Manages workflows with unrecoverable errors, ensuring a safe failure state.
- - [**Everything**](./patterns/everything): A comprehensive test case combining multiple patterns for a full integration scenario.
+ - [**Error (Fatal)**](./patterns/error-fatal): Highlights workflows with unrecoverable errors.
+ - [**Everything**](./patterns/everything): A comprehensive test case combining multiple patterns, including: `hook`, `signal`, `search`, `sleep` and `interrupt`.
  - [**Transactional Hook**](./patterns/hook): Implements a hook mechanism for transactional workflow subprocess execution.
- - [**Idempotency**](./patterns/idempotency): Ensures tasks produce consistent outcomes across retries or repeated executions.
- - [**Interrupt**](./patterns/interrupt): Demonstrates pausing and resuming workflows based on external events.
- - [**Retry**](./patterns/retry): Shows retry mechanisms for tasks, defining custom retry intervals and strategies.
- - [**Search**](./patterns/search): Integrates search capabilities within workflows to retrieve relevant data dynamically.
- - [**Signal**](./patterns/signal): Uses signaling to awaken paused workflows from external inputs=.
- - [**Sleep**](./patterns/sleep): Demonstrates controlled delays and pausing workflows between tasks. 
+ - [**Idempotency**](./patterns/idempotency): Ensures idempotent behavior in workflows for replay safety.
+ - [**Interrupt**](./patterns/interrupt): Demonstrates cancelling a running workflow based on external events.
+ - [**Random**](./patterns/random): Deterministically generates random numbers in workflows appropriate for *replay*.
+ - [**Retry**](./patterns/retry): Shows retry configurability and strategies for handling transient errors (like a flaky endpoint).
+ - [**Search**](./patterns/search): Integrates search capabilities within workflows to read and write user data idempotently.
+ - [**Signal**](./patterns/signal): Uses signaling to awaken paused workflows from *external* and *internal* inputs.
+ - [**Sleep**](./patterns/sleep): Demonstrates internally-triggered delays in workflow execution along with externally-triggered interruptions. 
 
 Visit each pattern’s page to see example code and unit test cases in action.
 
@@ -57,7 +70,7 @@ The examples in this project are licensed under the Apache 2.0 License. See the 
 
 ## Contributing
 
-Contributions are welcome! Please follow the [contribution guidelines](CONTRIBUTING.md) to submit pull requests or open issues.
+Contributions are welcome! Please follow the [contribution guidelines](./docs/CONTRIBUTING.md) to submit pull requests or open issues.
 
 ## Disclaimer
 

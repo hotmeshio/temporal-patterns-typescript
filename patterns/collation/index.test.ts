@@ -1,44 +1,38 @@
-import Redis from 'ioredis';
-import { MeshFlow, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/ioredis';
+import { Client as Postgres } from 'pg';
+import { MeshFlow, Utils, Types } from '@hotmeshio/hotmesh';
 
-import config from '../../$setup/config';
+import {
+  createAndTruncateDatabase,
+  connectionString,
+} from '../../$setup/postgres';
+
 import * as workflows from './src/workflows';
 
-const { guid, sleepFor } = Utils;
+const { guid } = Utils;
 const { Connection, Client, Worker } = MeshFlow;
 
-describe('TEMPORAL PATTERNS | collation | `Promise.all: Suspend>Collate>Awaken`', () => {
-  let handle: any;
-  const options = {
-    host: config.REDIS_HOST,
-    port: config.REDIS_PORT,
-    password: config.REDIS_PASSWORD,
-    db: config.REDIS_DATABASE,
-  };
+const pg_connection = {
+  class: Postgres,
+  options: { connectionString },
+};
+
+describe('TEMPORAL PATTERNS | Collation', () => {
+  let workflowId: string;
 
   beforeAll(async () => {
-    //init Redis and flush db
-    const redisConnection = await RedisConnection.connect(
-      guid(),
-      Redis,
-      options,
-    );
-    redisConnection.getClient().flushdb();
-  });
+    await createAndTruncateDatabase(true);
+  }, 20_000);
 
   afterAll(async () => {
-    await sleepFor(1500);
     await MeshFlow.shutdown();
-  }, 10_000);
+  }, 20_000);
 
   describe('Connection', () => {
     describe('connect', () => {
-      it('should echo the Redis config', async () => {
-        const connection = await Connection.connect({
-          class: Redis,
-          options,
-        });
+      it('should echo the backend config', async () => {
+        const connection = (await Connection.connect(
+          pg_connection,
+        )) as Types.ProviderConfig;
         expect(connection).toBeDefined();
         expect(connection.options).toBeDefined();
       });
@@ -48,17 +42,19 @@ describe('TEMPORAL PATTERNS | collation | `Promise.all: Suspend>Collate>Awaken`'
   describe('Client', () => {
     describe('start', () => {
       it('should connect a client and start a workflow execution', async () => {
-        const client = new Client({ connection: { class: Redis, options } });
-        //NOTE: `handle` is a global variable.
-        handle = await client.workflow.start({
+        const client = new Client({
+          connection: pg_connection,
+        });
+
+        ({ workflowId } = await client.workflow.start({
           args: [],
           taskQueue: 'loop-world',
           workflowName: 'example',
           workflowId: 'workflow-' + guid(),
-          expire: 120, //ensures the failed workflows aren't scrubbed too soon (so they can be reviewed)
-        });
-        expect(handle.workflowId).toBeDefined();
-      });
+          expire: 120,
+        }));
+        expect(workflowId).toBeDefined();
+      }, 20_000);
     });
   });
 
@@ -66,22 +62,33 @@ describe('TEMPORAL PATTERNS | collation | `Promise.all: Suspend>Collate>Awaken`'
     describe('create', () => {
       it('should create and run a worker', async () => {
         const worker = await Worker.create({
-          connection: { class: Redis, options },
+          connection: pg_connection,
           taskQueue: 'loop-world',
+          guid: 'worker-ngn',
           workflow: workflows.example,
         });
         await worker.run();
         expect(worker).toBeDefined();
-      });
+      }, 20_000);
     });
   });
 
   describe('WorkflowHandle', () => {
     describe('result', () => {
       it('run await 3 functions and one sleepFor in parallel', async () => {
+        const client = new Client({
+          connection: pg_connection,
+        });
+
+        const handle = await client.workflow.getHandle(
+          'loop-world',
+          'example',
+          workflowId, //global variable/ref to the workflowId
+        );
         const result = await handle.result();
+
         expect(result).toEqual(['Hello, 1!', 'Hello, 2!', 'Hello, 3!', 5]);
-      }, 15_000);
+      }, 30_000);
     });
   });
 });

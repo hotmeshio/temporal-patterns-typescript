@@ -1,52 +1,31 @@
-import * as Redis from 'redis';
-import { MeshFlow, Types, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/redis';
+import { MeshFlow, Types } from '@hotmeshio/hotmesh';
 
-import config from '../../$setup/config';
+import { createAndTruncateDatabase, connection } from '../../$setup/postgres';
+
 import * as workflows from './src/workflows';
-
-const { guid, sleepFor } = Utils;
-
 
 const { Connection, Client, Worker } = MeshFlow;
 
-describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () => {
+describe('TEMPORAL PATTERNS | Idempotency', () => {
   const CONFLICTING_NAME = 'idempotency-child';
   let handle: any;
-  const options = {
-    socket: {
-      host: config.REDIS_HOST,
-      port: config.REDIS_PORT,
-      tls: false,
-    },
-    password: config.REDIS_PASSWORD,
-    database: config.REDIS_DATABASE,
-  };
 
   beforeAll(async () => {
-    //init Redis and flush db
-    const redisConnection = await RedisConnection.connect(
-      guid(),
-      Redis as unknown as Types.RedisRedisClassType,
-      options,
-    );
-    redisConnection.getClient().flushDb();
-  });
+    await createAndTruncateDatabase(true);
+  }, 20_000);
 
   afterAll(async () => {
-    await sleepFor(1500);
     await MeshFlow.shutdown();
-  }, 10_000);
+  }, 20_000);
 
   describe('Connection', () => {
     describe('connect', () => {
-      it('should echo the Redis config', async () => {
-        const connection = await Connection.connect({
-          class: Redis,
-          options,
-        });
-        expect(connection).toBeDefined();
-        expect(connection.options).toBeDefined();
+      it('should echo the provider config', async () => {
+        const con = (await Connection.connect(
+          connection,
+        )) as Types.ProviderConfig;
+        expect(con).toBeDefined();
+        expect(con.options).toBeDefined();
       });
     });
   });
@@ -54,7 +33,7 @@ describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () =
   describe('Client', () => {
     describe('start', () => {
       it('should connect a client and start a workflow execution', async () => {
-        const client = new Client({ connection: { class: Redis, options } });
+        const client = new Client({ connection });
         handle = await client.workflow.start({
           args: ['HotMesh'],
           taskQueue: 'idempotency-world',
@@ -68,7 +47,7 @@ describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () =
           },
         });
         expect(handle.workflowId).toBeDefined();
-      });
+      }, 10_000);
     });
   });
 
@@ -76,10 +55,7 @@ describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () =
     describe('create', () => {
       it('should create and run the workers', async () => {
         const worker = await Worker.create({
-          connection: {
-            class: Redis,
-            options,
-          },
+          connection,
           taskQueue: 'idempotency-world',
           workflow: workflows.example,
         });
@@ -87,10 +63,7 @@ describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () =
         expect(worker).toBeDefined();
 
         const childWorker = await Worker.create({
-          connection: {
-            class: Redis,
-            options,
-          },
+          connection,
           taskQueue: 'idempotency-world',
           workflow: workflows.childExample,
         });
@@ -98,16 +71,13 @@ describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () =
         expect(childWorker).toBeDefined();
 
         const fixableWorker = await Worker.create({
-          connection: {
-            class: Redis,
-            options,
-          },
+          connection,
           taskQueue: 'idempotency-world',
           workflow: workflows.fixableExample,
         });
         await fixableWorker.run();
         expect(fixableWorker).toBeDefined();
-      });
+      }, 20_000);
     });
   });
 
@@ -126,7 +96,7 @@ describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () =
 
   describe('End to End', () => {
     it("should throw a 'DuplicateName' error and then > retry, resolve (fix the name), succeed", async () => {
-      const client = new Client({ connection: { class: Redis, options } });
+      const client = new Client({ connection });
       const badCount = 1;
       const handle = await client.workflow.start({
         args: [badCount],
@@ -135,7 +105,7 @@ describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () =
         workflowId: `fixable-${CONFLICTING_NAME}`,
         expire: 600,
         config: {
-          maximumAttempts: 3, //on try 3 we'll fix, and it will succeed
+          maximumAttempts: 3, //on try 3 it will be fixed and will succeed
           maximumInterval: '1 second',
           backoffCoefficient: 1,
         },
@@ -143,6 +113,6 @@ describe('TEMPORAL PATTERNS | idempotency | `Naming Conflict Fatal Error`', () =
       expect(handle.workflowId).toBe(`fixable-${CONFLICTING_NAME}`);
       const outcome = await handle.result<string>({ throwOnError: false });
       expect(outcome).toEqual('Hello, FIXED!');
-    }, 12_500);
+    }, 20_000);
   });
 });

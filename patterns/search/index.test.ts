@@ -1,52 +1,33 @@
-import * as Redis from 'redis';
-import { MeshFlow, Types, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/redis';
+import { MeshFlow, Types, Utils } from '@hotmeshio/hotmesh';
 
-import config from '../../$setup/config';
 const { guid, sleepFor } = Utils;
+import { createAndTruncateDatabase, connection } from '../../$setup/postgres';
 
 import * as workflows from './src/workflows';
-
 const { Connection, Client, Worker } = MeshFlow;
 
-describe('TEMPORAL PATTERNS | search | `Search > Index > Aggregate`', () => {
+describe('TEMPORAL PATTERNS | Search', () => {
   const prefix = 'bye-world-';
   const namespace = 'prod';
   let client: any;
   let workflowGuid: string;
-  const options = {
-    socket: {
-      host: config.REDIS_HOST,
-      port: config.REDIS_PORT,
-      tls: false,
-    },
-    password: config.REDIS_PASSWORD,
-    database: config.REDIS_DATABASE,
-  };
 
   beforeAll(async () => {
-    //init Redis and flush db
-    const redisConnection = await RedisConnection.connect(
-      guid(),
-      Redis as unknown as Types.RedisRedisClassType,
-      options,
-    );
-    redisConnection.getClient().flushDb();
-  });
+    await createAndTruncateDatabase(true);
+  }, 20_000);
 
   afterAll(async () => {
     await MeshFlow.shutdown();
-  }, 10_000);
+  }, 20_000);
 
   describe('Connection', () => {
     describe('connect', () => {
-      it('should echo the Redis config', async () => {
-        const connection = await Connection.connect({
-          class: Redis,
-          options,
-        });
-        expect(connection).toBeDefined();
-        expect(connection.options).toBeDefined();
+      it('should echo the provider config', async () => {
+        const con = (await Connection.connect(
+          connection,
+        )) as Types.ProviderConfig;
+        expect(con).toBeDefined();
+        expect(con.options).toBeDefined();
       });
     });
   });
@@ -54,7 +35,7 @@ describe('TEMPORAL PATTERNS | search | `Search > Index > Aggregate`', () => {
   describe('Client', () => {
     describe('start', () => {
       it('should connect a client and start a workflow execution', async () => {
-        client = new Client({ connection: { class: Redis, options } });
+        client = new Client({ connection });
         workflowGuid = prefix + guid();
 
         const handle = await client.workflow.start({
@@ -63,12 +44,13 @@ describe('TEMPORAL PATTERNS | search | `Search > Index > Aggregate`', () => {
           taskQueue: 'search-world',
           workflowName: 'example',
           workflowId: workflowGuid,
-          expire: 120, //keep in Redis after completion for 120 seconds
+          expire: 120,
           //SEED the initial workflow state with data (this is
           //different than the 'args' input data which the workflow
           //receives as its first argument...this data is available
           //to the workflow via the 'search' object)
-          //NOTE: data can be updated during workflow execution
+          //NOTE: data (user data) can be updated during workflow execution
+          //      and is considered to be mutable like job data
           search: {
             data: {
               fred: 'flintstone',
@@ -85,12 +67,13 @@ describe('TEMPORAL PATTERNS | search | `Search > Index > Aggregate`', () => {
     describe('create', () => {
       it('should create a worker', async () => {
         const worker = await Worker.create({
-          connection: { class: Redis, options },
+          connection,
           namespace,
           taskQueue: 'search-world',
           workflow: workflows.example,
           //INDEX the search space; if the index doesn't exist, it will be created
           //(this is supported by Redis backends with the FT module enabled)
+          //(other backends will ignore this option silently)
           search: {
             index: 'bye-bye',
             prefix: [prefix],
@@ -112,7 +95,7 @@ describe('TEMPORAL PATTERNS | search | `Search > Index > Aggregate`', () => {
 
       it('should create a hook worker', async () => {
         const worker = await Worker.create({
-          connection: { class: Redis, options },
+          connection,
           namespace,
           taskQueue: 'search-world',
           workflow: workflows.exampleHook,
@@ -148,19 +131,22 @@ describe('TEMPORAL PATTERNS | search | `Search > Index > Aggregate`', () => {
         );
         const result = await handle.result();
         expect(result).toEqual('Hello, HotMesh! - Search, HotMesh!');
-        //call the FT search module to locate the workflow via fuzzy search
+
+        //call a search query to look for
         //NOTE: include an underscore before the search term (e.g., `_term`).
         //      (HotMesh uses `_` to avoid collisions with reserved words
-        const [count, ...rest] = await client.workflow.search(
-          'search-world',
+        const results = (await client.workflow.search(
+          'goodbye-world',
           workflows.example.name,
           namespace,
-          'bye-bye',
-          '@_custom1:meshflow',
-        );
-        expect(count).toEqual(1);
-        const [id, ..._rest2] = rest;
-        expect(id).toEqual(`hmsh:${namespace}:j:${workflowGuid}`);
+          'sql',
+          'SELECT job_id FROM prod.jobs_attributes WHERE field = $1 and value = $2',
+          '_custom1',
+          'meshflow',
+        )) as unknown as { job_id: string }[];
+
+        expect(results.length).toBeGreaterThanOrEqual(1);
+        expect(results[0].job_id).toBeDefined();
       }, 7_500);
     });
   });

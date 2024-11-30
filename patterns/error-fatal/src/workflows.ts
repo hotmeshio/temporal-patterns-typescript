@@ -2,9 +2,9 @@ import { workflow } from '@hotmeshio/hotmesh';
 
 import * as activities from './activities';
 
-const { myFatalActivity } = workflow.proxyActivities<
-  typeof activities
->({ activities });
+const { myFatalActivity } = workflow.proxyActivities<typeof activities>({
+  activities,
+});
 
 async function example({ name }: Record<'name', string>): Promise<void> {
   try {

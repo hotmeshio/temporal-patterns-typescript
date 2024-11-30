@@ -1,47 +1,32 @@
-import Redis from 'ioredis';
-import { MeshFlow, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/ioredis';
+import { MeshFlow, Types, Utils } from '@hotmeshio/hotmesh';
 
-import config from '../../$setup/config';
+import { createAndTruncateDatabase, connection } from '../../$setup/postgres';
+
 import * as childWorkflows from './child/workflows';
 import * as parentWorkflows from './parent/workflows';
 
-const { guid, sleepFor, s } = Utils;
+const { guid, s } = Utils;
 const { Connection, Client, Worker } = MeshFlow;
 
-describe('TEMPORAL PATTERNS | composition | `workflow.execChild`', () => {
+describe('TEMPORAL PATTERNS | Composition', () => {
   let handle: any;
-  const options = {
-    host: config.REDIS_HOST,
-    port: config.REDIS_PORT,
-    password: config.REDIS_PASSWORD,
-    db: config.REDIS_DATABASE,
-  };
 
   beforeAll(async () => {
-    //init Redis and flush db
-    const redisConnection = await RedisConnection.connect(
-      guid(),
-      Redis,
-      options,
-    );
-    redisConnection.getClient().flushdb();
-  });
+    await createAndTruncateDatabase(true);
+  }, 20_000);
 
   afterAll(async () => {
-    await sleepFor(1500);
     await MeshFlow.shutdown();
-  }, 10_000);
+  }, 20_000);
 
   describe('Connection', () => {
     describe('connect', () => {
-      it('should echo the Redis config', async () => {
-        const connection = await Connection.connect({
-          class: Redis,
-          options,
-        });
-        expect(connection).toBeDefined();
-        expect(connection.options).toBeDefined();
+      it('should echo the provider config', async () => {
+        const con = (await Connection.connect(
+          connection,
+        )) as Types.ProviderConfig;
+        expect(con).toBeDefined();
+        expect(con.options).toBeDefined();
       });
     });
   });
@@ -50,7 +35,7 @@ describe('TEMPORAL PATTERNS | composition | `workflow.execChild`', () => {
     describe('start', () => {
       it('should connect a client and start a PARENT workflow execution', async () => {
         try {
-          const client = new Client({ connection: { class: Redis, options } });
+          const client = new Client({ connection });
           const h = client.workflow.start({
             args: ['PARENT', false], //setting to false optimizes workflow by suppressing the reentrant branch
             taskQueue: 'parent-world',
@@ -82,7 +67,7 @@ describe('TEMPORAL PATTERNS | composition | `workflow.execChild`', () => {
     describe('create', () => {
       it('should create and run the PARENT workflow worker', async () => {
         const worker = await Worker.create({
-          connection: { class: Redis, options },
+          connection,
           taskQueue: 'parent-world',
           workflow: parentWorkflows.parentExample,
         });
@@ -92,7 +77,7 @@ describe('TEMPORAL PATTERNS | composition | `workflow.execChild`', () => {
 
       it('should create and run the CHILD workflow worker', async () => {
         const worker = await Worker.create({
-          connection: { class: Redis, options },
+          connection,
           taskQueue: 'child-world',
           workflow: childWorkflows.childExample,
         });

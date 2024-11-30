@@ -1,46 +1,30 @@
-import Redis from 'ioredis';
-import { MeshFlow, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/ioredis';
-
-import config from '../../$setup/config';
-import * as workflows from './src/workflows';
+import { MeshFlow, Types, Utils } from '@hotmeshio/hotmesh';
 
 const { guid, sleepFor } = Utils;
+import { createAndTruncateDatabase, connection } from '../../$setup/postgres';
+
+import * as workflows from './src/workflows';
 const { Connection, Client, Worker } = MeshFlow;
 
-describe('TEMPORAL PATTERNS | signal | `signal/waitForSignal`', () => {
+describe('TEMPORAL PATTERNS | Signal | Wait For Signal', () => {
   let handle: any;
-  const options = {
-    host: config.REDIS_HOST,
-    port: config.REDIS_PORT,
-    password: config.REDIS_PASSWORD,
-    db: config.REDIS_DATABASE,
-  };
 
   beforeAll(async () => {
-    //init Redis and flush db
-    const redisConnection = await RedisConnection.connect(
-      guid(),
-      Redis,
-      options,
-    );
-    redisConnection.getClient().flushdb();
-  });
+    await createAndTruncateDatabase(true);
+  }, 20_000);
 
   afterAll(async () => {
-    await sleepFor(1500);
     await MeshFlow.shutdown();
-  }, 10_000);
+  }, 20_000);
 
   describe('Connection', () => {
     describe('connect', () => {
-      it('should echo the Redis config', async () => {
-        const connection = await Connection.connect({
-          class: Redis,
-          options,
-        });
-        expect(connection).toBeDefined();
-        expect(connection.options).toBeDefined();
+      it('should echo the provider config', async () => {
+        const con = (await Connection.connect(
+          connection,
+        )) as Types.ProviderConfig;
+        expect(con).toBeDefined();
+        expect(con.options).toBeDefined();
       });
     });
   });
@@ -48,8 +32,7 @@ describe('TEMPORAL PATTERNS | signal | `signal/waitForSignal`', () => {
   describe('Client', () => {
     describe('start', () => {
       it('should connect a client and start a workflow execution', async () => {
-        const client = new Client({ connection: { class: Redis, options } });
-        //NOTE: `handle` is a global variable.
+        const client = new Client({ connection });
         handle = await client.workflow.start({
           args: ['ColdMush'],
           taskQueue: 'hello-world',
@@ -65,10 +48,7 @@ describe('TEMPORAL PATTERNS | signal | `signal/waitForSignal`', () => {
     describe('create', () => {
       it('should create and run a worker', async () => {
         const worker = await Worker.create({
-          connection: {
-            class: Redis,
-            options,
-          },
+          connection,
           taskQueue: 'hello-world',
           workflow: workflows.example,
         });
@@ -87,7 +67,7 @@ describe('TEMPORAL PATTERNS | signal | `signal/waitForSignal`', () => {
 
         //signal by instancing a new client connection
         await sleepFor(1_000);
-        const client = new Client({ connection: { class: Redis, options } });
+        const client = new Client({ connection });
         await client.workflow.signal('hijklmnop', { name: 'WarnCrash' });
 
         const result = await handle.result();

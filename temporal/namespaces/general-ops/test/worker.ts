@@ -1,7 +1,9 @@
 import { Worker, NativeConnection } from '@temporalio/worker';
-import * as activities from './activities';
+
 import { config } from '../../../config';
 import { connection } from '../../../connection';
+
+import * as activities from './activities';
 
 class TemporalWorker {
   connection: NativeConnection;

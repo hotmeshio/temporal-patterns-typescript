@@ -17,25 +17,6 @@ services:
     volumes:
       - redis_data:/data
 
-  valkey:
-    image: valkey/valkey:7.2.5
-    platform: linux/amd64
-    ports:
-      - "6398:6379"
-    volumes:
-      - valkey_data:/data
-      - ./valkey.conf:/usr/local/etc/redis/redis.conf
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
-
-  dragonflydb:
-    image: 'docker.dragonflydb.io/dragonflydb/dragonfly'
-    ulimits:
-      memlock: -1
-    ports:
-      - "6397:6379"
-    volumes:
-      - dragonfly_data:/data
-
   postgresql:
     container_name: temporal-postgresql
     environment:
@@ -116,16 +97,18 @@ services:
         condition: service_healthy
       temporal:
         condition: service_healthy
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+    develop:
+      watch:
+      - action: sync
+        path: .
+        target: /home/node/app
+        ignore:
+          - node_modules/
+      - action: rebuild
+        path: package.json
+
     command: ["sh", "-c", "npm install && tail -f /dev/null"]
 
 volumes:
   redis_data:
     driver: local
-  valkey_data:
-    driver: local
-  dragonfly_data:
-    driver: local
-  node_modules:

@@ -1,4 +1,5 @@
 import { workflow } from '@hotmeshio/hotmesh';
+
 import * as activities from './activities';
 
 // NOTE: when `./activities` exports a `default` function,
@@ -37,38 +38,38 @@ const { greet } = workflow.proxyActivities<ActivitiesType>({
   activities,
 });
 
-export async function example(name: string): Promise<responseType> {
+export async function example(
+  name: string,
+  workflowId: string,
+): Promise<responseType> {
   //deterministic random number
   const random1 = workflow.random();
-  
+
   //suspend and await proxyActivities result
   const proxyGreeting = await greet(name);
-  
+
   //suspend and await proxyActivities result
-  await greet(`${name}2`)
-  
+  await greet(`${name}2`);
+
   //deterministic random number
   const random2 = workflow.random();
-  
+
   //suspend and await workflow.sleepFor completion
-  await workflow
-    .sleepFor('2 seconds');
+  await workflow.sleepFor('2 seconds');
 
   //suspend and await workflow.execChild completion
-  await workflow
-    .execChild({
-      workflowName: 'childExample',
-      args: [name],
-      taskQueue: 'everything-world',
-    });
-  
+  await workflow.execChild({
+    workflowName: 'childExample',
+    args: [name],
+    taskQueue: 'everything-world',
+  });
+
   //suspend and await workflow.startChild completion
-  await workflow
-    .startChild({
-      workflowName: 'childExample',
-      args: [`start-${name}`],
-      taskQueue: 'everything-world',
-    });
+  await workflow.startChild({
+    workflowName: 'childExample',
+    args: [`start-${name}`],
+    taskQueue: 'everything-world',
+  });
 
   //suspend...the test runner will send this signalId to awaken the workflow at this point
   const payload = await workflow.waitFor<payloadType>('abcdefg');
@@ -86,7 +87,7 @@ export async function example(name: string): Promise<responseType> {
       workflowName: 'childExample',
       args: [`start-${name}x`],
       taskQueue: 'everything-world',
-      workflowId: 'MyWorkflowId123',
+      workflowId,
     }),
     workflow.execChild<void>({
       workflowName: 'childExample',

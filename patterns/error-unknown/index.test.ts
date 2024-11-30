@@ -1,48 +1,32 @@
-import Redis from 'ioredis';
-import { MeshFlow, Utils  } from '@hotmeshio/hotmesh';
-import { RedisConnection } from '@hotmeshio/hotmesh/build/services/connector/providers/ioredis';
-import { MeshFlowMaxedError } from '@hotmeshio/hotmesh/build/modules/errors';
+import { MeshFlow, Utils, Errors, Types } from '@hotmeshio/hotmesh';
 
-import config from '../../$setup/config';
+import { createAndTruncateDatabase, connection } from '../../$setup/postgres';
+
 import { example, state as STATE } from './src/workflows';
 
-const { guid, sleepFor } = Utils;
+const { guid } = Utils;
 const { Connection, Client, Worker } = MeshFlow;
 
-describe('TEMPORAL PATTERNS | unknown | `Workflow Retryable Unknown Error`', () => {
-  let handle: any;
+describe('TEMPORAL PATTERNS | Unknown Error', () => {
   const toThrowCount = 3;
-  const options = {
-    host: config.REDIS_HOST,
-    port: config.REDIS_PORT,
-    password: config.REDIS_PASSWORD,
-    db: config.REDIS_DATABASE,
-  };
+  let handle: any;
 
   beforeAll(async () => {
-    //init Redis and flush db
-    const redisConnection = await RedisConnection.connect(
-      guid(),
-      Redis,
-      options,
-    );
-    redisConnection.getClient().flushdb();
-  });
+    await createAndTruncateDatabase(true);
+  }, 20_000);
 
   afterAll(async () => {
-    await sleepFor(1500);
     await MeshFlow.shutdown();
-  }, 10_000);
+  }, 20_000);
 
   describe('Connection', () => {
     describe('connect', () => {
-      it('should echo the Redis config', async () => {
-        const connection = await Connection.connect({
-          class: Redis,
-          options,
-        });
-        expect(connection).toBeDefined();
-        expect(connection.options).toBeDefined();
+      it('should echo the provider config', async () => {
+        const con = (await Connection.connect(
+          connection,
+        )) as Types.ProviderConfig;
+        expect(con).toBeDefined();
+        expect(con.options).toBeDefined();
       });
     });
   });
@@ -50,7 +34,7 @@ describe('TEMPORAL PATTERNS | unknown | `Workflow Retryable Unknown Error`', () 
   describe('Client', () => {
     describe('start', () => {
       it('should connect a client and start a workflow execution', async () => {
-        const client = new Client({ connection: { class: Redis, options } });
+        const client = new Client({ connection });
         handle = await client.workflow.start({
           args: [toThrowCount],
           taskQueue: 'unknown-world',
@@ -58,7 +42,6 @@ describe('TEMPORAL PATTERNS | unknown | `Workflow Retryable Unknown Error`', () 
           workflowId: guid(),
           expire: 120,
           config: {
-            //speed up the default retry strategy (so the test completes in time)
             maximumAttempts: toThrowCount + 1,
             backoffCoefficient: 1,
             maximumInterval: '1s',
@@ -73,16 +56,13 @@ describe('TEMPORAL PATTERNS | unknown | `Workflow Retryable Unknown Error`', () 
     describe('create', () => {
       it('should create and run a worker', async () => {
         const worker = await Worker.create({
-          connection: {
-            class: Redis,
-            options,
-          },
+          connection,
           taskQueue: 'unknown-world',
           workflow: example,
         });
         await worker.run();
         expect(worker).toBeDefined();
-      });
+      }, 20_000);
     });
   });
 
@@ -91,7 +71,7 @@ describe('TEMPORAL PATTERNS | unknown | `Workflow Retryable Unknown Error`', () 
       it('should return successfully after retrying a workflow-generated error', async () => {
         const result = await handle.result();
         expect(result).toBe(toThrowCount);
-      }, 15_000);
+      }, 20_000);
     });
   });
 
@@ -101,7 +81,7 @@ describe('TEMPORAL PATTERNS | unknown | `Workflow Retryable Unknown Error`', () 
       STATE.count = 0;
 
       //instance a client and start the workflow
-      const client = new Client({ connection: { class: Redis, options } });
+      const client = new Client({ connection });
       const handle = await client.workflow.start({
         args: [toThrowCount],
         taskQueue: 'unknown-world',
@@ -125,11 +105,11 @@ describe('TEMPORAL PATTERNS | unknown | `Workflow Retryable Unknown Error`', () 
         expect(error.message).toEqual('recurring-test-error');
 
         //...but the final error response will be a MeshFlowMaxedError after the workflow gives up
-        expect(error.code).toEqual(new MeshFlowMaxedError('').code);
+        expect(error.code).toEqual(new Errors.MeshFlowMaxedError('').code);
 
         //expect a stack trace
         expect(error.stack).toBeDefined();
       }
-    }, 15_000);
+    }, 20_000);
   });
 });

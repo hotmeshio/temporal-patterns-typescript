@@ -3,9 +3,7 @@ import { workflow } from '@hotmeshio/hotmesh';
 import * as activities from './activities';
 import type * as activityTypes from './activities';
 
-const { parentActivity } = workflow.proxyActivities<
-  typeof activityTypes
->({
+const { parentActivity } = workflow.proxyActivities<typeof activityTypes>({
   activities,
 });
 
