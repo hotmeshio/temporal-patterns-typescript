@@ -1,8 +1,12 @@
 # Temporal Patterns
 
-This repository demonstrates common [Temporal.io](https://temporal.io/) design patterns deployed using **HotMesh**. Each example pattern is authored as a set of unit tests with assertions made against the runtime, showcasing various platform features.
+This repository demonstrates common [Temporal.io](https://temporal.io/) design patterns deployed using **HotMesh**. Each example pattern is authored as a set of unit tests with assertions made against the runtime.
 
-The Temporal Postgres database is used as the default persistence layer for workflow state management for both HotMesh and Temporal. Temporal is included to showcase the interoperability between the two platforms.
+Although the APIs are the same, HotMesh is serverless and uses decentralized message routers. The backend is pluggable and interchangeably supports Postgres, Redis, and NATS.
+
+| Temporal | HotMesh |
+|:--------:|:-------:|
+| <img src="./docs/img/tmp.png" width="400"/> | <img src="./docs/img/hms.png" width="400"/> |
 
 ## Getting Started
 
