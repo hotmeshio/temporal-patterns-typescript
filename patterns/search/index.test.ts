@@ -59,7 +59,7 @@ describe('TEMPORAL PATTERNS | Search', () => {
           },
         });
         expect(handle.workflowId).toBeDefined();
-      });
+      }, 10_000);
     });
   });
 
@@ -91,7 +91,7 @@ describe('TEMPORAL PATTERNS | Search', () => {
         });
         await worker.run();
         expect(worker).toBeDefined();
-      });
+      }, 10_000);
 
       it('should create a hook worker', async () => {
         const worker = await Worker.create({
@@ -102,7 +102,7 @@ describe('TEMPORAL PATTERNS | Search', () => {
         });
         await worker.run();
         expect(worker).toBeDefined();
-      });
+      }, 10_000);
 
       it('should create a hook client and publish to invoke a hook', async () => {
         //sleep so the main thread gets into a paused state

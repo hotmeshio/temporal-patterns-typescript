@@ -169,7 +169,6 @@ describe('TEMPORAL PATTERNS | Hook', () => {
         )) as unknown as { job_id: string }[];
 
         expect(results.length).toBeGreaterThanOrEqual(1);
-        console.log('RESULTS:', results[0].job_id);
         expect(results[0].job_id).toBeDefined();
       }, 35_000);
     });
