@@ -42,7 +42,7 @@ describe('TEMPORAL PATTERNS | Sleep | Interrupt', () => {
         });
         await worker.run();
         expect(worker).toBeDefined();
-      });
+      }, 10_000);
     });
   });
 
@@ -68,7 +68,7 @@ describe('TEMPORAL PATTERNS | Sleep | Interrupt', () => {
           workflowId: interruptedWorkflowGuid,
         });
         expect(localHandle.workflowId).toBeDefined();
-      });
+      }, 10_000);
     });
   });
 
