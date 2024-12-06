@@ -1,4 +1,4 @@
-import config from '../../config';
+const config: any = { };
 
 export const connection = {
   namespace: config.TEMPORAL_NAMESPACE,
