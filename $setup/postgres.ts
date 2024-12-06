@@ -129,16 +129,16 @@ export const createAndTruncateDatabase = async (bTruncate = false) => {
     );
 
     // If you have specific schemas (like 'meshflow'), grant privileges there as well
-    await hotmeshClient.query(`GRANT ALL ON SCHEMA meshflow TO temporal`);
-    await hotmeshClient.query(
-      `GRANT ALL ON ALL TABLES IN SCHEMA meshflow TO temporal`,
-    );
-    await hotmeshClient.query(
-      `GRANT ALL ON ALL SEQUENCES IN SCHEMA meshflow TO temporal`,
-    );
-    await hotmeshClient.query(
-      `ALTER DEFAULT PRIVILEGES IN SCHEMA meshflow GRANT ALL ON TABLES TO temporal`,
-    );
+    // await hotmeshClient.query(`GRANT ALL ON SCHEMA meshflow TO temporal`);
+    // await hotmeshClient.query(
+    //   `GRANT ALL ON ALL TABLES IN SCHEMA meshflow TO temporal`,
+    // );
+    // await hotmeshClient.query(
+    //   `GRANT ALL ON ALL SEQUENCES IN SCHEMA meshflow TO temporal`,
+    // );
+    // await hotmeshClient.query(
+    //   `ALTER DEFAULT PRIVILEGES IN SCHEMA meshflow GRANT ALL ON TABLES TO temporal`,
+    // );
 
     // console.log(
     //   `Privileges granted to user 'temporal' on database '${dbName}'.`,

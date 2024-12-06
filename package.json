@@ -1,6 +1,6 @@
 {
   "name": "temporal-patterns-typescript",
-  "version": "0.3.24",
+  "version": "0.3.25",
   "description": "Temporal pattern examples",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "test:signal": "NODE_ENV=test jest ./patterns/signal/index.test.ts --detectOpenHandles --forceExit --verbose"
   },
   "dependencies": {
-    "@hotmeshio/hotmesh": "0.3.24",
+    "@hotmeshio/hotmesh": "0.3.25",
     "@temporalio/client": "^1.10.3",
     "@temporalio/worker": "^1.10.3",
     "@temporalio/workflow": "^1.10.3"
