@@ -1,12 +1,12 @@
 {
   "name": "temporal-patterns-typescript",
-  "version": "0.3.25",
+  "version": "0.3.28",
   "description": "Temporal pattern examples",
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "_docker:build:up": "docker compose watch",
-    "docker:up": "npm run _copy_env_example; npm run _docker:build:up",
+    "docker:up": "npm run _docker:build:up",
     "docker:down": "docker compose down",
     "docker:reset": "docker compose down -v && npm run docker:up",
     "lint": "eslint . --ext .ts",
@@ -27,7 +27,7 @@
     "test:signal": "NODE_ENV=test jest ./patterns/signal/index.test.ts --detectOpenHandles --forceExit --verbose"
   },
   "dependencies": {
-    "@hotmeshio/hotmesh": "0.3.25",
+    "@hotmeshio/hotmesh": "0.3.28",
     "@temporalio/client": "^1.10.3",
     "@temporalio/worker": "^1.10.3",
     "@temporalio/workflow": "^1.10.3"
