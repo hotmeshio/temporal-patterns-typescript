@@ -1,8 +1,12 @@
-# Temporal Patterns
+# Apples to Apples: Temporal vs HotMesh vs MeshFlow
 
-This repository demonstrates common [Temporal.io](https://temporal.io/) design patterns deployed using **HotMesh**. Each example pattern is authored as a set of unit tests with assertions made against the runtime.
+The `examples/` directory includes three modules that execute the same workflow using different engines. Each module produces identical inputs and outputs, showcasing how the same workflow can be implemented across these engines:
 
-Although the APIs are the same, HotMesh is serverless and uses decentralized message routers. The backend is pluggable and interchangeably supports Postgres, Redis, and NATS.
+- **`temporal`**: Temporal is a workflow engine that operates on a central app server.
+- **`hotmesh`**: HotMesh is a serverless workflow engine leveraging decentralized message routers.
+- **`meshflow`**: MeshFlow is HotMesh’s emulation of Temporal’s workflow engine.
+
+HotMesh is serverless, with a pluggable backend that supports Postgres, Redis, and NATS interchangeably, while the APIs remain consistent across engines.
 
 | Temporal | HotMesh |
 |:--------:|:-------:|
@@ -18,18 +22,18 @@ Although the APIs are the same, HotMesh is serverless and uses decentralized mes
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/hotmeshio/temporal-patterns-typescript.git
-   cd temporal-patterns-typescript
+   git clone https://github.com/hotmeshio/temporal-side-by-side-typescript.git
+   cd temporal-side-by-side-typescript
    ```
-2. **Install** the dependencies
+2. **Install Dependencies**
     ```bash
     npm install
     ```
-3. Startup Docker
+3. **Start Docker**
     ```bash
     npm run docker:up
     ```
-4. **Shutdown Docker**
+4. **Stop Docker**
     ```bash
     npm run docker:down
     ```
@@ -37,44 +41,37 @@ Although the APIs are the same, HotMesh is serverless and uses decentralized mes
     ```bash
     npm run docker:reset
     ```
-6. **Run Unit Tests** from within Docker (Postgres is the default backend).
-    ```bash
-    npm test
-    ```
-7. **Run a Single Test (e.g., collation)**
-    ```bash
-    npm run test:collation
-    ```
 
-### Pattern List 
- - [**Collation**](./patterns/collation): Demonstrates `Promise.all` behavior in a reentrant workflow. 
- - [**Composition**](./patterns/composition): Highlights parent-child workflow interactions.
- - [**Error (Unknown)**](./patterns/error-unknown): Handles unexpected errors in workflows with resilience strategies.
- - [**Error (Fatal)**](./patterns/error-fatal): Highlights workflows with unrecoverable errors.
- - [**Everything**](./patterns/everything): A comprehensive test case combining multiple patterns, including: `hook`, `signal`, `search`, `sleep` and `interrupt`.
- - [**Transactional Hook**](./patterns/hook): Implements a hook mechanism for transactional workflow subprocess execution.
- - [**Idempotency**](./patterns/idempotency): Ensures idempotent behavior in workflows for replay safety.
- - [**Interrupt**](./patterns/interrupt): Demonstrates cancelling a running workflow based on external events.
- - [**Random**](./patterns/random): Deterministically generates random numbers in workflows appropriate for *replay*.
- - [**Retry**](./patterns/retry): Shows retry configurability and strategies for handling transient errors (like a flaky endpoint).
- - [**Search**](./patterns/search): Integrates search capabilities within workflows to read and write user data idempotently.
- - [**Signal**](./patterns/signal): Uses signaling to awaken paused workflows from *external* and *internal* inputs.
- - [**Sleep**](./patterns/sleep): Demonstrates internally-triggered delays in workflow execution along with externally-triggered interruptions. 
+### Testing the Engines
 
-Visit each pattern’s page to see example code and unit test cases in action.
+You can test each engine by sending HTTP GET requests to the following endpoints after the containers are loaded:
+
+- **Temporal**:
+  ```bash
+  curl http://localhost:3010/api/v1/test/temporal
+  ```
+- **HotMesh**:
+  ```bash
+  curl http://localhost:3010/api/v1/test/hotmesh
+  ```
+- **MeshFlow**:
+  ```bash
+  curl http://localhost:3010/api/v1/test/meshflow
+  ```
+- **All Engines**:
+  ```bash
+  curl http://localhost:3010/api/v1/test
+  ```
 
 ## Additional Resources
 
-- **[SDK Documentation](https://hotmeshio.github.io/sdk-typescript/)**: Detailed documentation and examples of each pattern.
-- **[Download (NPM)](https://www.npmjs.com/package/@hotmeshio/hotmesh)**: Access the HotMesh package on npm.
+- **[SDK Documentation](https://docs.hotmesh.io)**: Comprehensive documentation and examples for all patterns.
+- **[NPM Package](https://www.npmjs.com/package/@hotmeshio/hotmesh)**: Download the HotMesh package.
+- **[Contribution Guidelines](./docs/CONTRIBUTING.md)**: Instructions for contributing to the project.
 
 ## License
 
-The examples in this project are licensed under the Apache 2.0 License. See the LICENSE file for more details.
-
-## Contributing
-
-Contributions are welcome! Please follow the [contribution guidelines](./docs/CONTRIBUTING.md) to submit pull requests or open issues.
+This project is licensed under the Apache 2.0 License. See the LICENSE file for details.
 
 ## Disclaimer
 
