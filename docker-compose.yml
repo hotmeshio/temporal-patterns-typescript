@@ -1,22 +1,6 @@
 name: hotmesh-temporal
 
 services:
-  redis:
-    image: redis/redis-stack:7.2.0-v10
-    platform: linux/amd64
-    environment:
-      REDIS_ARGS: "--requirepass key_admin"
-    ports:
-      - "6399:6379"
-      - "8001:8001"
-    healthcheck:
-      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "-a", "key_admin", "ping"]
-      interval: 5s
-      timeout: 10s
-      retries: 3
-    volumes:
-      - redis_data:/data
-
   postgresql:
     container_name: temporal-postgresql
     environment:
@@ -93,8 +77,6 @@ services:
       - NODE_ENV=development
       - PORT=3010
     depends_on:
-      redis:
-        condition: service_healthy
       temporal:
         condition: service_healthy
     develop:
@@ -108,7 +90,3 @@ services:
         path: package.json
 
     command: ["sh", "-c", "npm install && tail -f /dev/null"]
-
-volumes:
-  redis_data:
-    driver: local

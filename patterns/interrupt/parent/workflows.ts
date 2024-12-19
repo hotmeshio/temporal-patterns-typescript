@@ -18,8 +18,9 @@ export async function parentExample(
     workflowId: workflowId2,
     expire: 600, //don't expire immediately once complete
   });
-  //interrupted flows are stopped immediately, while an async cascade is triggered
-  // the workflow will also be expired/scrubbed from Redis in 600 seconds (default 1s)
+  //interrupted flows are stopped immediately:
+  // transition message that returns will be rejected and its
+  // result discarded
   (await workflow.interrupt(workflowId2, {
     throw: false,
     expire: 600,

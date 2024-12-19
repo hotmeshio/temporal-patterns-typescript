@@ -71,9 +71,7 @@ describe('TEMPORAL PATTERNS | Search', () => {
           namespace,
           taskQueue: 'search-world',
           workflow: workflows.example,
-          //INDEX the search space; if the index doesn't exist, it will be created
-          //(this is supported by Redis backends with the FT module enabled)
-          //(other backends will ignore this option silently)
+          //SEED the initial workflow state with custom user data
           search: {
             index: 'bye-bye',
             prefix: [prefix],

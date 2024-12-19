@@ -2,7 +2,7 @@
 
 This repository demonstrates common [Temporal.io](https://temporal.io/) design patterns deployed using **HotMesh**. Each example pattern is authored as a set of unit tests with assertions made against the runtime.
 
-Although the APIs are the same, HotMesh is serverless and uses decentralized message routers. The backend is pluggable and interchangeably supports Postgres, Redis, and NATS.
+Although the APIs are the same, HotMesh is serverless and uses decentralized message routers. The backend is pluggable and interchangeably supports Postgres, Redis, and NATS. NATS is useful for event-heavy workflows and can be added alongside Postgres for a hybrid backend. Publish events directly from running workflows for real-time insights. Redis is ideal for high-throughput workflows and can be run durably with AOF persistence (without clustering).
 
 | Temporal | HotMesh |
 |:--------:|:-------:|

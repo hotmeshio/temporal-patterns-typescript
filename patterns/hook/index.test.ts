@@ -69,9 +69,8 @@ describe('TEMPORAL PATTERNS | Hook', () => {
           taskQueue: 'hook-world',
           workflow: workflows.example,
 
-          //NOTE: if the index doesn't exist, it will be created.
-          //      Redis backends with the FT module enabled support this:
-          //      (other modules should silently ignore this)
+          // NOTE: Redis backends with the FT module enabled support indexing;
+          //       Other backends should fail silently for such requests
           search: {
             index: 'bye-bye',
             prefix: [prefix],
